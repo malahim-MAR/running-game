@@ -20,6 +20,11 @@ const PLAYER_WIDTH = 20;
 const PLAYER_HEIGHT = 36;
 const PLATFORM_TOLERANCE = 8;
 const PARTICLE_COUNT = 40;
+const SOUND_PATHS = {
+  jump: '/sounds/jump.mp3',
+  fall: '/sounds/fall.mp3',
+  portal: '/sounds/portal.mp3',
+};
 
 function createParticles() {
   const particles = [];
@@ -42,6 +47,8 @@ export default function Game() {
   const frameCountRef = useRef(0);
   const levelIndexRef = useRef(0);
   const respawnTimerRef = useRef(null);
+  const nextLevelVoiceTimerRef = useRef(null);
+  const soundRefs = useRef({});
 
   const playerRef = useRef({
     x: 60,
@@ -56,6 +63,31 @@ export default function Game() {
   const keysRef = useRef({});
   const jumpPressedRef = useRef(false);
   const particlesRef = useRef(createParticles());
+
+  const playSound = useCallback((name, { loop = false, volume = 1, reset = true } = {}) => {
+    if (typeof window === 'undefined') return;
+
+    const src = SOUND_PATHS[name];
+    if (!src) return;
+
+    let audio = soundRefs.current[name];
+    if (!audio) {
+      audio = new Audio(src);
+      audio.preload = 'auto';
+      soundRefs.current[name] = audio;
+    }
+
+    audio.loop = loop;
+    audio.volume = volume;
+
+    if (reset) {
+      audio.currentTime = 0;
+    }
+
+    audio.play().catch(() => {
+      // Ignore autoplay or missing-file failures quietly.
+    });
+  }, []);
 
   const resetPlayerToSpawn = useCallback((levelIndex = levelIndexRef.current) => {
     const level = levels[levelIndex];
@@ -81,6 +113,10 @@ export default function Game() {
       if (respawnTimerRef.current) {
         clearTimeout(respawnTimerRef.current);
         respawnTimerRef.current = null;
+      }
+      if (nextLevelVoiceTimerRef.current) {
+        clearTimeout(nextLevelVoiceTimerRef.current);
+        nextLevelVoiceTimerRef.current = null;
       }
     },
     [resetPlayerToSpawn]
@@ -114,6 +150,8 @@ export default function Game() {
     function triggerDeath() {
       if (respawnTimerRef.current) return;
 
+      playSound('fall', { volume: 0.9 });
+
       respawnTimerRef.current = setTimeout(() => {
         resetPlayerToSpawn();
         respawnTimerRef.current = null;
@@ -122,6 +160,11 @@ export default function Game() {
 
     function advanceLevel() {
       const nextLevelIndex = levelIndexRef.current + 1;
+      playSound('portal', { volume: 1 });
+      nextLevelVoiceTimerRef.current = window.setTimeout(() => {
+        playSound('portal', { volume: 1, reset: true });
+      }, 300);
+
       if (nextLevelIndex >= levels.length) {
         loadLevel(0);
         return;
@@ -149,6 +192,7 @@ export default function Game() {
         player.vy = JUMP_FORCE;
         player.onGround = false;
         jumpPressedRef.current = true;
+        playSound('jump', { volume: 0.9 });
       }
 
       player.vy += GRAVITY;
@@ -269,8 +313,11 @@ export default function Game() {
       if (respawnTimerRef.current) {
         clearTimeout(respawnTimerRef.current);
       }
+      if (nextLevelVoiceTimerRef.current) {
+        clearTimeout(nextLevelVoiceTimerRef.current);
+      }
     };
-  }, [handleKeyDown, handleKeyUp, loadLevel, resetPlayerToSpawn]);
+  }, [handleKeyDown, handleKeyUp, loadLevel, playSound, resetPlayerToSpawn]);
 
   return (
     <div className={styles.wrapper}>
@@ -286,4 +333,3 @@ export default function Game() {
     </div>
   );
 }
-
