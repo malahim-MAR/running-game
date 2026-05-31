@@ -1,0 +1,47 @@
+/* ═══════════════════════════════════════════════════
+   Game.module.css — Dark Horror Platformer
+   Canvas centering + dark page background
+   ═══════════════════════════════════════════════════ */
+
+.wrapper {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  background: #050505;
+  user-select: none;
+  overflow: hidden;
+}
+
+.canvasContainer {
+  position: relative;
+  border: 1px solid #1a0000;
+  box-shadow:
+    0 0 40px rgba(80, 0, 0, 0.25),
+    0 0 120px rgba(40, 0, 0, 0.15),
+    inset 0 0 60px rgba(0, 0, 0, 0.5);
+  border-radius: 2px;
+}
+
+.canvas {
+  display: block;
+  cursor: none;
+  image-rendering: pixelated;
+}
+
+/* ── Vignette overlay on top of canvas ── */
+.vignette {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  background: radial-gradient(
+    ellipse at center,
+    transparent 50%,
+    rgba(0, 0, 0, 0.6) 100%
+  );
+  border-radius: 2px;
+}
